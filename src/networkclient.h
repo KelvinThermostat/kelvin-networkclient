@@ -1,6 +1,6 @@
 #include <Arduino.h>
 
-class WifiClient
+class NetworkClient
 {
 private:
     void setTime();
@@ -8,6 +8,6 @@ private:
 public:
     void connect();
     void check();
-    WifiClient();
-    WifiClient(const String *hostname);
+    NetworkClient();
+    NetworkClient(const String *hostname);
 };

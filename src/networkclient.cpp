@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <ESP8266mDNS.h>
 #include <ESP8266WiFi.h>
-#include "wificlient.h"
+#include "networkclient.h"
 #include "secrets.h"
 
 String mdnsHost;
@@ -9,15 +9,15 @@ time_t now;
 time_t nowish = 1510592825;
 
 
-WifiClient::WifiClient() {}
+NetworkClient::NetworkClient() {}
 
-WifiClient::WifiClient(const String *host)
+NetworkClient::NetworkClient(const String *host)
 {
     mdnsHost = *host;
 }
 
 
-void WifiClient::setTime()
+void NetworkClient::setTime()
 {
     Serial.print("\nSetting time using SNTP");
 
@@ -39,7 +39,7 @@ void WifiClient::setTime()
     Serial.print(asctime(&timeinfo));
 }
 
-void WifiClient::connect()
+void NetworkClient::connect()
 {
     delay(1000);
 
@@ -85,7 +85,7 @@ void WifiClient::connect()
     ESP.restart();
 }
 
-void WifiClient::check()
+void NetworkClient::check()
 {
     if (WiFi.status() != WL_CONNECTED)
     {

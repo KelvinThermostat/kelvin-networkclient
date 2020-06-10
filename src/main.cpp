@@ -1,18 +1,18 @@
 #include <Arduino.h>
-#include "wificlient.h"
+#include "networkclient.h"
 
 const String host = "mDNShost";
 
-WifiClient wifi = WifiClient(&host);
+NetworkClient net = NetworkClient(&host);
 
 void setup()
 {
   Serial.begin(9600);
 
-  wifi.connect();
+  net.connect();
 }
 
 void loop()
 {
-  wifi.check();
+  net.check();
 }
