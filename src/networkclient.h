@@ -8,6 +8,6 @@ private:
 public:
     void connect();
     void check();
-    NetworkClient();
-    NetworkClient(const String *hostname);
+    String getDateTime();
+    void registerMdnsHost(String host);
 };

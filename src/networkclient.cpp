@@ -1,42 +1,43 @@
 #include <Arduino.h>
 #include <ESP8266mDNS.h>
 #include <ESP8266WiFi.h>
+#include <NTPClient.h>
+#include <WiFiUdp.h>
 #include "networkclient.h"
 #include "secrets.h"
 
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP, "pool.ntp.org");
 String mdnsHost;
-time_t now;
-time_t nowish = 1510592825;
 
-
-NetworkClient::NetworkClient() {}
-
-NetworkClient::NetworkClient(const String *host)
+void NetworkClient::registerMdnsHost(String host)
 {
-    mdnsHost = *host;
-}
+    mdnsHost = host;
 
+    if (MDNS.begin(mdnsHost))
+    {
+        Serial.print(F("\nmDNS: "));
+        Serial.print(mdnsHost);
+        Serial.println(F(".local"));
+
+        MDNS.addService("http", "tcp", 80);
+    }
+}
 
 void NetworkClient::setTime()
 {
-    Serial.print("\nSetting time using SNTP");
+    Serial.print(F("\nSetting time using SNTP"));
 
-    configTime(TIME_ZONE * 3600, 0 * 3600, "pool.ntp.org", "time.nist.gov");
+    timeClient.begin();
+    timeClient.setTimeOffset(0); // GMT
+    timeClient.update();
 
-    now = time(nullptr);
+    time_t epochTime = timeClient.getEpochTime();
 
-    while (now < nowish)
-    {
-        delay(500);
-        Serial.print(".");
-        now = time(nullptr);
-    }
+    struct tm *timeinfo = gmtime((time_t *)&epochTime);
 
-    struct tm timeinfo;
-    gmtime_r(&now, &timeinfo);
-
-    Serial.print("\nCurrent date/time: ");
-    Serial.print(asctime(&timeinfo));
+    Serial.print(F("\nCurrent date/time: "));
+    Serial.print(asctime(timeinfo));
 }
 
 void NetworkClient::connect()
@@ -45,7 +46,7 @@ void NetworkClient::connect()
 
     byte timeout = 50;
 
-    Serial.print("\nConnecting to WiFi network ");
+    Serial.print(F("\nConnecting to WiFi network "));
     Serial.print(WIFI_SSID);
 
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
@@ -56,20 +57,8 @@ void NetworkClient::connect()
 
         if (WiFi.status() == WL_CONNECTED)
         {
-            Serial.print("\nConnected. IP: ");
+            Serial.print(F("\nConnected. IP: "));
             Serial.print(WiFi.localIP());
-
-            if (mdnsHost != nullptr)
-            {
-                if (MDNS.begin(mdnsHost))
-                {
-                    Serial.print(" and mDNS: ");
-                    Serial.print(mdnsHost);
-                    Serial.println(".local");
-
-                    MDNS.addService("http", "tcp", 80);
-                }
-            }
 
             setTime();
 
@@ -79,7 +68,7 @@ void NetworkClient::connect()
         delay(1000);
     }
 
-    Serial.println("Failed to connect to WiFi. Restarting in 2 seconds.");
+    Serial.println(F("Failed to connect to WiFi. Restarting in 2 seconds"));
 
     delay(2000);
     ESP.restart();
@@ -89,10 +78,20 @@ void NetworkClient::check()
 {
     if (WiFi.status() != WL_CONNECTED)
     {
-        Serial.println("Wifi connection lost. Reconecting.");
+        Serial.println(F("Wifi connection lost. Reconecting."));
 
         connect();
     }
 
-    MDNS.update();
+    if (mdnsHost != nullptr)
+    {
+        MDNS.update();
+    }
+
+    timeClient.update();
+}
+
+String NetworkClient::getDateTime()
+{
+    return timeClient.getFormattedTime();
 }
